@@ -34,7 +34,7 @@ services:
 
   web:
     command: "/opt/planorama/script/planorama_start.sh"
-    image: ghcr.io/chicagoworldcon/planorama:staging
+    image: ghcr.io/arisiainc/planorama:staging
     ports:
       - 3000:3000
     volumes:
@@ -59,7 +59,7 @@ services:
 
   planorama-sidekiq:
     command: "/opt/planorama/script/planorama_sidekiq.sh"
-    image: ghcr.io/chicagoworldcon/planorama:staging
+    image: ghcr.io/arisiainc/planorama:staging
     volumes:
       # NOTE: this will need to reflect local system
       - /var/log/planorama/sidekiq:/opt/planorama/log
