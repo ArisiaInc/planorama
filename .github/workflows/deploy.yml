@@ -29,7 +29,7 @@ jobs:
       DEVISE_SECRET: aa77bb734faa9b935c1f8b68846e37aed9096cc9fb746copypastaf856594409a11b1086535e468edb2e5bbc18482b386b6264ada38703dcdefd94a291ab5a95eb5
       REGISTRY: ghcr.io
       IMAGE_NAME: ${{ github.repository }}
-      TEST_TAG: planorama/${{ GITHUB_REF_NAME }}:ci-test
+      TEST_TAG: planorama/${{ github.ref_name }}:ci-test
       
     steps:
       - name: Maximize build space
