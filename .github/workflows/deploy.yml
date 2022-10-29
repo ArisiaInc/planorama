@@ -1,5 +1,5 @@
 ---
-name: "Build Planorame Docker image for Deploy"
+name: "Build Planorama Docker image for deploy"
 
 on:
   push:
@@ -29,7 +29,8 @@ jobs:
       DEVISE_SECRET: aa77bb734faa9b935c1f8b68846e37aed9096cc9fb746copypastaf856594409a11b1086535e468edb2e5bbc18482b386b6264ada38703dcdefd94a291ab5a95eb5
       REGISTRY: ghcr.io
       IMAGE_NAME: ${{ github.repository }}
-
+      TEST_TAG: planorama/${{ github.ref_name }}:ci-test
+      
     steps:
       - name: Maximize build space
         uses: easimon/maximize-build-space@master
@@ -71,28 +72,6 @@ jobs:
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern=latest
 
-      - name: Extract branch name
-        shell: bash
-        run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF##*/})"
-        id: extract_name
-
-      # ARE THE SECRETS ORG LEVEL AND DO WE HAVE ACCESS ????
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v1
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-west-2
-
-      - name: Login to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v1
-
-      - name: Define the repository labels
-        run: |
-          echo "CONTAINER_TEST_REPOSITORY=${{ steps.login-ecr.outputs.registry }}/planorama:ci-${{ github.sha }}" >> $GITHUB_ENV
-          echo "CONTAINER_DEPLOY_REPOSITORY=${{ steps.login-ecr.outputs.registry }}/planorama:${{ steps.extract_name.outputs.branch }}" >> $GITHUB_ENV
-
       - name: Set up Docker Buildx
         id: buildx
         uses: docker/setup-buildx-action@master
@@ -125,30 +104,25 @@ jobs:
           push: false
           load: true
           # target: development
-          tags: "${{ env.CONTAINER_TEST_REPOSITORY }}"
+          tags: "${{ env.TEST_TAG }}"
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache-new
 
       - name: Run specs
         run: |
           docker run -d --name="test-database" --hostname "postgres" -e DEVISE_SECRET=${{ env.DEVISE_SECRET }} -e "POSTGRES_PASSWORD=test" postgres:latest
-          docker run --network "container:test-database" -e RAILS_ENV=test -e DEVISE_SECRET=${{ env.DEVISE_SECRET }} -e "POSTGRES_PASSWORD=test" $CONTAINER_TEST_REPOSITORY /bin/sh -c "bundle exec rake db:create db:structure:load; bundle exec rake db:seed; bundle exec rspec"
+          docker run --network "container:test-database" -e RAILS_ENV=test -e DEVISE_SECRET=${{ env.DEVISE_SECRET }} -e "POSTGRES_PASSWORD=test" $TEST_TAG /bin/sh -c "bundle exec rake db:create db:structure:load; bundle exec rake db:seed; bundle exec rspec"
 
       # The docker pull does not work
       - name: Run security tests
         if: ${{ startsWith(github.ref, 'refs/heads/main') || startsWith(github.ref, 'refs/heads/security-') }}
         run: |
-          docker run -e RAILS_ENV=test $CONTAINER_TEST_REPOSITORY bundle update brakeman --quiet
-          docker run -e RAILS_ENV=test $CONTAINER_TEST_REPOSITORY bundle exec brakeman --run-all-checks --no-pager
-          # docker run -e RAILS_ENV=test $CONTAINER_TEST_REPOSITORY bundle exec bundler-audit check --update
-          # docker run -e RAILS_ENV=test $CONTAINER_TEST_REPOSITORY bundle exec ruby-audit check
-          docker run -e RAILS_ENV=production -e NODE_ENV=production $CONTAINER_TEST_REPOSITORY /bin/sh -c "bin/yarn install --frozen-lockfile; yarn check --integrity"
-
-      - name: Publish the deployable image
-        run: |
-          docker tag $CONTAINER_TEST_REPOSITORY $CONTAINER_DEPLOY_REPOSITORY
-          docker push $CONTAINER_DEPLOY_REPOSITORY
-
+          docker run -e RAILS_ENV=test $TEST_TAG bundle update brakeman --quiet
+          docker run -e RAILS_ENV=test $TEST_TAG bundle exec brakeman --run-all-checks --no-pager
+          # docker run -e RAILS_ENV=test $TEST_TAG bundle exec bundler-audit check --update
+          # docker run -e RAILS_ENV=test $TEST_TAG bundle exec ruby-audit check
+          docker run -e RAILS_ENV=production -e NODE_ENV=production $TEST_TAG /bin/sh -c "bin/yarn install --frozen-lockfile; yarn check --integrity"
+          
       #
       # Push the image to GHRC (does another build)
       #
@@ -174,15 +148,3 @@ jobs:
         run: |
           rm -rf /tmp/.buildx-cache
           mv /tmp/.buildx-cache-new /tmp/.buildx-cache
-
-      # I think this is not needed since the "test" image is not pushed
-      # - name: Clean up the CI testing tag
-      #   run: |
-      #     aws ecr batch-delete-image --repository-name planorama --image-ids imageTag=ci-${{ github.sha }}
-
-      # TODO: this is python script to do .... ?
-      # - id: deploy
-      #   name: Deploy to the target host
-      #   if: ${{ startsWith(github.ref, 'refs/heads/staging') }}
-      #   run: |
-      #     ./deploy/deploy-tag.py "${{ steps.extract_name.outputs.branch }}" --description "@${{ github.actor }} deployed ${{ steps.extract_name.outputs.branch }} to staging from the deploy action"
