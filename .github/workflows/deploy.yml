@@ -1,5 +1,5 @@
 ---
-name: "Build Planorame Docker image for Deploy"
+name: "Build Planorama Docker image for deploy"
 
 on:
   push:
@@ -29,7 +29,7 @@ jobs:
       DEVISE_SECRET: aa77bb734faa9b935c1f8b68846e37aed9096cc9fb746copypastaf856594409a11b1086535e468edb2e5bbc18482b386b6264ada38703dcdefd94a291ab5a95eb5
       REGISTRY: ghcr.io
       IMAGE_NAME: ${{ github.repository }}
-      TEST_TAG: ${{ github.repository_owner }}/planorama:ci-test
+      TEST_TAG: planorama/${{ GITHUB_REF_NAME }}:ci-test
       
     steps:
       - name: Maximize build space
@@ -117,11 +117,11 @@ jobs:
       - name: Run security tests
         if: ${{ startsWith(github.ref, 'refs/heads/main') || startsWith(github.ref, 'refs/heads/security-') }}
         run: |
-          docker run -e RAILS_ENV=test $CONTAINER_TEST_REPOSITORY bundle update brakeman --quiet
-          docker run -e RAILS_ENV=test $CONTAINER_TEST_REPOSITORY bundle exec brakeman --run-all-checks --no-pager
-          # docker run -e RAILS_ENV=test $CONTAINER_TEST_REPOSITORY bundle exec bundler-audit check --update
-          # docker run -e RAILS_ENV=test $CONTAINER_TEST_REPOSITORY bundle exec ruby-audit check
-          docker run -e RAILS_ENV=production -e NODE_ENV=production $CONTAINER_TEST_REPOSITORY /bin/sh -c "bin/yarn install --frozen-lockfile; yarn check --integrity"
+          docker run -e RAILS_ENV=test $TEST_TAG bundle update brakeman --quiet
+          docker run -e RAILS_ENV=test $TEST_TAG bundle exec brakeman --run-all-checks --no-pager
+          # docker run -e RAILS_ENV=test $TEST_TAG bundle exec bundler-audit check --update
+          # docker run -e RAILS_ENV=test $TEST_TAG bundle exec ruby-audit check
+          docker run -e RAILS_ENV=production -e NODE_ENV=production $TEST_TAG /bin/sh -c "bin/yarn install --frozen-lockfile; yarn check --integrity"
           
       #
       # Push the image to GHRC (does another build)
