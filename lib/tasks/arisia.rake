@@ -17,26 +17,33 @@ namespace :arisia do
   desc "Ensure that the session formats are correct"
   task fix_formats: :environment do
     [
-      'Autographing',
       'Ceremony',
       'Concert',
       'Demonstration',
       'Dialog',
       'Discussion',
-      'Filk Circle',
-      'Game',
       'Game Show',
       'Interview',
+      'LARP',
       'Meeting',
       'Meetup',
+      'Open Gaming',
       'Other',
       'Panel',
       'Performance',
+      'Play-Along',
       'Presentation',
+      'Projected Media',
+      'Signing',
+      'Sing-Along',
+      'Song Circle',
       'Reading',
       'Rehearsal',
+      'Role-Playing Game',
       'Room Turn',
+      'Tabletop Game',
       'Table Talk',
+      'Video Game',
       'Workshop'
     ].each do |format_name|
       Format.create(name: format_name) unless Format.exists?(name: format_name)
@@ -53,15 +60,9 @@ namespace :arisia do
       format.delete
     end
 
-    fix_format("Other (add to notes)", "Other")
-    fix_format("Rehersal", "Rehearsal")
-    fix_format("Filk", "Filk Circle")
-    fix_format("Circle", "Filk Circle")
-    fix_format("Room", "Room Turn")
-    fix_format("Turn", "Room Turn")
-    fix_format("Show", "Game Show")
-    fix_format("Table", "Table Talk")
-    fix_format("Talk", "Table Talk")
+    fix_format("Autographing", "Signing")
+    fix_format("Filk Circle", "Song Circle")
+    fix_format("Game", "Open Gaming")
   end
 
   def fix_format(old_format, new_format)
@@ -166,6 +167,16 @@ namespace :arisia do
 
   desc "Seed Arisia Venue/Room Data"
   task seed_rooms: :environment do
+    westin = Venue.find_by name: "Westin Boston Seaport District"
+    if !westin
+      Venue.create!(
+        [
+          {name: "Westin Boston Seaport District", address: "425 Summer Street, Boston, MA 02210"}
+        ]
+      )
+    end
+
+    westin_rooms
     # hyatt = Venue.find_by name: "Hyatt Regency Chicago"
     # if !hyatt
     #   Venue.create!(
@@ -221,6 +232,42 @@ namespace :arisia do
   #     Room.create!(candidate)
   #   end
   # end
+
+  def westin_rooms
+    westin = Venue.find_by name: "Westin Boston Seaport District"
+    candidates = [
+      {venue_id: westin.id, name: "Grand Ballroom A", floor: "1W", purpose: "Events - Main Tent", length: 112, width: 52, height: 24.0, area_of_space: 5824, capacity: 552},
+      {venue_id: westin.id, name: "Grand Ballroom B", floor: "1W", purpose: "Events - Main Tent", length: 112, width: 49, height: 24.0, area_of_space: 5488, capacity: 552},
+      {venue_id: westin.id, name: "Commonwealth Ballroom A", floor: "1W", purpose: "Events - Dance Tent / Masq Green Room", length: 52, width: 25, height: 14.0, area_of_space: 1300, capacity: 128},
+      {venue_id: westin.id, name: "Commonwealth Ballroom B", floor: "1W", purpose: "Events - Dance Tent / Masq Green Room", length: 52, width: 26, height: 14.0, area_of_space: 1352, capacity: 128},
+      {venue_id: westin.id, name: "Commonwealth Ballroom C", floor: "1W", purpose: "Events - Dance Tent / Masq Green Room", length: 52, width: 21, height: 14.0, area_of_space: 1092, capacity: 150},
+      {venue_id: westin.id, name: "Marina Ballroom 1", floor: "2E", purpose: "Programming", length: 54, width: 44, height: 13.5, area_of_space: 2376, capacity: 150},
+      {venue_id: westin.id, name: "Marina Ballroom 2", floor: "2E", purpose: "Programming", length: 51, width: 30, height: 13.5, area_of_space: 1530, capacity: 120},
+      {venue_id: westin.id, name: "Marina Ballroom 3", floor: "2E", purpose: "Programming", length: 52, width: 30, height: 13.5, area_of_space: 1560, capacity: 120},
+      {venue_id: westin.id, name: "Marina Ballroom 4", floor: "2E", purpose: "Programming", length: 52, width: 27, height: 13.5, area_of_space: 1404, capacity: 110},
+      {venue_id: westin.id, name: "Hancock", floor: "2W", purpose: "Fast Track", length: 31, width: 25, height: 14.0, area_of_space: 775, capacity: 140},
+      {venue_id: westin.id, name: "Webster", floor: "2W", purpose: "Fast Track", length: 45, width: 32, height: 14.0, area_of_space: 1440, capacity: 50},
+      {venue_id: westin.id, name: "Stone", floor: "2W", purpose: "Programming", length: 45, width: 32, height: 12.0, area_of_space: 1440, capacity: 140},
+      {venue_id: westin.id, name: "Paine", floor: "2W", purpose: "Programming", length: 24, width: 31, height: 14.0, area_of_space: 744, capacity: 60},
+      {venue_id: westin.id, name: "Harbor Ballroom 1", floor: "3E", purpose: "Gaming", length: 84, width: 46, height: 19.0, area_of_space: 3864, capacity: 360},
+      {venue_id: westin.id, name: "Harbor Ballroom 2", floor: "3E", purpose: "Art Show", length: 58, width: 39, height: 19.0, area_of_space: 2262, capacity: 240},
+      {venue_id: westin.id, name: "Harbor Ballroom 3", floor: "3E", purpose: "Art Show", length: 58, width: 43, height: 24.0, area_of_space: 2494, capacity: 270},
+      {venue_id: westin.id, name: "Burroughs", floor: "3E", purpose: "Programming", length: 32, width: 48, height: 11.5, area_of_space: 1536, capacity: 160},
+      {venue_id: westin.id, name: "Carlton", floor: "3E", purpose: "Video Gaming", length: 48, width: 26, height: 11.5, area_of_space: 1248, capacity: 130},
+      {venue_id: westin.id, name: "Griffin", floor: "3E", purpose: "LAN Party", length: 30, width: 24, height: 11.5, area_of_space: 720, capacity: 70},
+      {venue_id: westin.id, name: "Adams", floor: "3W", purpose: "Programming", length: 37, width: 24, height: 12.0, area_of_space: 888, capacity: 90},
+      {venue_id: westin.id, name: "Alcott", floor: "3W", purpose: "Programming", length: 41, width: 29, height: 12.0, area_of_space: 1189, capacity: 100},
+      {venue_id: westin.id, name: "Bulfinch", floor: "3W", purpose: "Programming", length: 28, width: 18, height: 12.0, area_of_space: 504, capacity: 40},
+      {venue_id: westin.id, name: "Douglass", floor: "3W", purpose: "Programming", length: 23, width: 54, height: 12.0, area_of_space: 1242, capacity: 120},
+      {venue_id: westin.id, name: "Faneuil", floor: "3W", purpose: "Programming", length: 23, width: 56, height: 12.0, area_of_space: 1288, capacity: 120}
+    ]
+    candidates.each do |candidate|
+      room = Room.find_by name: candidate[:name]
+      next if room
+
+      Room.create!(candidate)
+    end
+  end
 
   # def hyatt_rooms
   #   hyatt = Venue.find_by name: "Hyatt Regency Chicago"
