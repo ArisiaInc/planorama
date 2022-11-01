@@ -19,6 +19,7 @@ namespace :arisia do
     [
       'Ceremony',
       'Concert',
+      'Dance (Participatory)'
       'Demonstration',
       'Dialog',
       'Discussion',
@@ -30,10 +31,12 @@ namespace :arisia do
       'Open Gaming',
       'Other',
       'Panel',
+      'Participatory Event',
       'Performance',
       'Play-Along',
       'Presentation',
       'Projected Media',
+      'Setup',
       'Signing',
       'Sing-Along',
       'Song Circle',
@@ -143,16 +146,16 @@ namespace :arisia do
   desc "Seed Arisia Roomsets"
   task seed_room_sets: :environment do
     room_set_names = [
-      'Head table w/ Theater Seating',
-      '60" Round Tables (seats 8)',
-      '72" Round Tables (seats 10)',
+      'Banquet'
       'Boardroom Table',
       'Circle of Chairs',
       'Classroom',
       'Clear Floor',
       'Hollow Square',
-      'U Shape Table',
       'Reception (highboys)',
+      'Theater with head table',
+      'Theater without head table',
+      'U Shape Table',
       'Other'
     ]
     room_set_names.each do |rs_name|
@@ -162,6 +165,19 @@ namespace :arisia do
       RoomSet.create!(
         name: rs_name
       )
+    end
+
+    fix_room_set('Head table w/ Theater Seating', 'Theater with head table')
+    fix_room_set( '60" Round Tables (seats 8)', 'Banquet')
+    fix_room_set('72" Round Tables (seats 10)', 'Banquet')
+  end
+
+  def fix_room_set(old_room_set, new_room_set)
+    room_set = RoomSet.find_by name: old_room_set
+    new_room_set = RoomSet.find_by name: new_room_set
+    if room_set
+      Session.where(room_set_id: room_set.id).update_all(room_set_id: new_room_set.id)
+      room_set.delete
     end
   end
 
@@ -241,6 +257,7 @@ namespace :arisia do
       {venue_id: westin.id, name: "Commonwealth Ballroom A", floor: "1W", purpose: "Events - Dance Tent / Masq Green Room", length: 52, width: 25, height: 14.0, area_of_space: 1300, capacity: 128},
       {venue_id: westin.id, name: "Commonwealth Ballroom B", floor: "1W", purpose: "Events - Dance Tent / Masq Green Room", length: 52, width: 26, height: 14.0, area_of_space: 1352, capacity: 128},
       {venue_id: westin.id, name: "Commonwealth Ballroom C", floor: "1W", purpose: "Events - Dance Tent / Masq Green Room", length: 52, width: 21, height: 14.0, area_of_space: 1092, capacity: 150},
+      # {venue_id: westin.id, name: "Commonwealth Ballroom ABC" floor: "1W", purpose: "Events - Dance Tent / Masq Green Room", length: 52, width: 25 + 26 + 21, height: 14.0, area_of_space: 1300 + 1352 + 1092, capacity: 128 + 128 + 150}
       {venue_id: westin.id, name: "Marina Ballroom 1", floor: "2E", purpose: "Programming", length: 54, width: 44, height: 13.5, area_of_space: 2376, capacity: 150},
       {venue_id: westin.id, name: "Marina Ballroom 2", floor: "2E", purpose: "Programming", length: 51, width: 30, height: 13.5, area_of_space: 1530, capacity: 120},
       {venue_id: westin.id, name: "Marina Ballroom 3", floor: "2E", purpose: "Programming", length: 52, width: 30, height: 13.5, area_of_space: 1560, capacity: 120},
@@ -250,8 +267,9 @@ namespace :arisia do
       {venue_id: westin.id, name: "Stone", floor: "2W", purpose: "Programming", length: 45, width: 32, height: 12.0, area_of_space: 1440, capacity: 140},
       {venue_id: westin.id, name: "Paine", floor: "2W", purpose: "Programming", length: 24, width: 31, height: 14.0, area_of_space: 744, capacity: 60},
       {venue_id: westin.id, name: "Harbor Ballroom 1", floor: "3E", purpose: "Gaming", length: 84, width: 46, height: 19.0, area_of_space: 3864, capacity: 360},
-      {venue_id: westin.id, name: "Harbor Ballroom 2", floor: "3E", purpose: "Art Show", length: 58, width: 39, height: 19.0, area_of_space: 2262, capacity: 240},
-      {venue_id: westin.id, name: "Harbor Ballroom 3", floor: "3E", purpose: "Art Show", length: 58, width: 43, height: 24.0, area_of_space: 2494, capacity: 270},
+      # {venue_id: westin.id, name: "Harbor Ballroom 2", floor: "3E", purpose: "Art Show", length: 58, width: 39, height: 19.0, area_of_space: 2262, capacity: 240},
+      # {venue_id: westin.id, name: "Harbor Ballroom 3", floor: "3E", purpose: "Art Show", length: 58, width: 43, height: 24.0, area_of_space: 2494, capacity: 270},
+      {venue_id: westin.id, name: "Harbor Ballroom 2+3", floor: "3E", purpose: "Art Show", length: 58, width: 39 + 43, height: 19.0, area_of_space: 2262 + 2494, capacity: 240 + 270},
       {venue_id: westin.id, name: "Burroughs", floor: "3E", purpose: "Programming", length: 32, width: 48, height: 11.5, area_of_space: 1536, capacity: 160},
       {venue_id: westin.id, name: "Carlton", floor: "3E", purpose: "Video Gaming", length: 48, width: 26, height: 11.5, area_of_space: 1248, capacity: 130},
       {venue_id: westin.id, name: "Griffin", floor: "3E", purpose: "LAN Party", length: 30, width: 24, height: 11.5, area_of_space: 720, capacity: 70},
@@ -266,6 +284,18 @@ namespace :arisia do
       next if room
 
       Room.create!(candidate)
+    end
+
+    fix_room("Harbor Ballroom 2", "Harbor Ballroom 2+3")
+    fix_room("Harbor Ballroom 3", "Harbor Ballroom 2+3")
+  end
+
+  def fix_room(old_room, new_room)
+    room = Room.find_by name: old_room
+    new_room = Room.find_by name: new_room
+    if room
+      Session.where(room_id: room.id).update_all(room_id: new_room.id)
+      room.delete
     end
   end
 
